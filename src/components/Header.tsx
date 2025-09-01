@@ -1,4 +1,5 @@
 import { Search, ShoppingCart, User, Menu, Heart } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +31,7 @@ const Header = () => {
             <Button variant="ghost" size="icon" className="md:hidden">
               <Menu className="h-5 w-5" />
             </Button>
-            <div className="flex items-center space-x-2">
+            <Link to="/" className="flex items-center space-x-2">
               <div className="text-2xl font-bold">
                 <span className="text-primary">snap</span>
                 <span className="text-secondary">N</span>
@@ -39,7 +40,7 @@ const Header = () => {
               <Badge variant="secondary" className="text-xs">
                 Plus
               </Badge>
-            </div>
+            </Link>
           </div>
 
           {/* Search Bar */}
@@ -50,32 +51,46 @@ const Header = () => {
                 type="text"
                 placeholder="Search for products, brands and more..."
                 className="pl-10 pr-4 h-11 w-full border-2 focus:border-primary"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    const query = e.currentTarget.value;
+                    if (query.trim()) {
+                      window.location.href = `/search?q=${encodeURIComponent(query)}`;
+                    }
+                  }
+                }}
               />
             </div>
           </div>
 
           {/* Right Actions */}
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" className="relative">
-              <Heart className="h-5 w-5" />
+            <Button asChild variant="ghost" size="icon" className="relative">
+              <Link to="/account/wishlist">
+                <Heart className="h-5 w-5" />
+              </Link>
             </Button>
             
-            <Button variant="ghost" size="icon" className="relative">
-              <ShoppingCart className="h-5 w-5" />
-              <Badge 
-                variant="secondary" 
-                className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
-              >
-                3
-              </Badge>
+            <Button asChild variant="ghost" size="icon" className="relative">
+              <Link to="/cart">
+                <ShoppingCart className="h-5 w-5" />
+                <Badge 
+                  variant="secondary" 
+                  className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+                >
+                  3
+                </Badge>
+              </Link>
             </Button>
 
-            <Button variant="ghost" size="icon">
-              <User className="h-5 w-5" />
+            <Button asChild variant="ghost" size="icon">
+              <Link to="/account">
+                <User className="h-5 w-5" />
+              </Link>
             </Button>
 
-            <Button className="btn-brand hidden md:flex">
-              Login
+            <Button asChild className="btn-brand hidden md:flex">
+              <Link to="/auth">Login</Link>
             </Button>
           </div>
         </div>
@@ -88,6 +103,14 @@ const Header = () => {
               type="text"
               placeholder="Search for products..."
               className="pl-10 pr-4 h-11 w-full border-2 focus:border-primary"
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  const query = e.currentTarget.value;
+                  if (query.trim()) {
+                    window.location.href = `/search?q=${encodeURIComponent(query)}`;
+                  }
+                }
+              }}
             />
           </div>
         </div>
@@ -97,29 +120,29 @@ const Header = () => {
       <div className="border-t bg-muted/20">
         <div className="container mx-auto px-4 py-2">
           <div className="flex items-center space-x-8 overflow-x-auto">
-            <Button variant="ghost" size="sm" className="whitespace-nowrap">
-              Electronics
+            <Button asChild variant="ghost" size="sm" className="whitespace-nowrap">
+              <Link to="/category/electronics">Electronics</Link>
             </Button>
-            <Button variant="ghost" size="sm" className="whitespace-nowrap">
-              Fashion
+            <Button asChild variant="ghost" size="sm" className="whitespace-nowrap">
+              <Link to="/category/fashion">Fashion</Link>
             </Button>
-            <Button variant="ghost" size="sm" className="whitespace-nowrap">
-              Home & Kitchen
+            <Button asChild variant="ghost" size="sm" className="whitespace-nowrap">
+              <Link to="/category/home-kitchen">Home & Kitchen</Link>
             </Button>
-            <Button variant="ghost" size="sm" className="whitespace-nowrap">
-              Beauty
+            <Button asChild variant="ghost" size="sm" className="whitespace-nowrap">
+              <Link to="/category/beauty">Beauty</Link>
             </Button>
-            <Button variant="ghost" size="sm" className="whitespace-nowrap">
-              Sports
+            <Button asChild variant="ghost" size="sm" className="whitespace-nowrap">
+              <Link to="/category/sports">Sports</Link>
             </Button>
-            <Button variant="ghost" size="sm" className="whitespace-nowrap">
-              Books
+            <Button asChild variant="ghost" size="sm" className="whitespace-nowrap">
+              <Link to="/category/books">Books</Link>
             </Button>
-            <Button variant="ghost" size="sm" className="whitespace-nowrap">
-              Automotive
+            <Button asChild variant="ghost" size="sm" className="whitespace-nowrap">
+              <Link to="/category/automotive">Automotive</Link>
             </Button>
-            <Button variant="ghost" size="sm" className="whitespace-nowrap text-secondary font-semibold">
-              🔥 Today's Deals
+            <Button asChild variant="ghost" size="sm" className="whitespace-nowrap text-secondary font-semibold">
+              <Link to="/deals">🔥 Today's Deals</Link>
             </Button>
           </div>
         </div>

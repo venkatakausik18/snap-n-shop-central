@@ -1,7 +1,8 @@
 import { ArrowRight, Truck, Shield, Headphones, Gift, Zap, Star } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import Header from "@/components/Header";
+import Layout from "@/components/Layout";
 import ProductCard from "@/components/ProductCard";
 import CategoryCard from "@/components/CategoryCard";
 import heroImage from "@/assets/hero-shopping.jpg";
@@ -81,9 +82,7 @@ const Index = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      
+    <Layout>
       {/* Hero Section */}
       <section className="hero-gradient text-white overflow-hidden">
         <div className="container mx-auto px-4 py-16 lg:py-24">
@@ -102,9 +101,11 @@ const Index = () => {
                 Get fast delivery, easy returns, and the best deals online.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Button size="lg" className="btn-hero text-lg px-8 py-6">
-                  Shop Now
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                <Button asChild size="lg" className="btn-hero text-lg px-8 py-6">
+                  <Link to="/products">
+                    Shop Now
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
                 </Button>
                 <Button variant="outline" size="lg" className="text-lg px-8 py-6 border-white text-white hover:bg-white hover:text-primary">
                   Download App
@@ -190,9 +191,11 @@ const Index = () => {
                 Most popular items this week
               </p>
             </div>
-            <Button variant="outline" className="hidden md:flex">
-              View All
-              <ArrowRight className="ml-2 h-4 w-4" />
+            <Button asChild variant="outline" className="hidden md:flex">
+              <Link to="/products">
+                View All
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
             </Button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -203,9 +206,11 @@ const Index = () => {
             ))}
           </div>
           <div className="text-center mt-8 md:hidden">
-            <Button variant="outline">
-              View All Products
-              <ArrowRight className="ml-2 h-4 w-4" />
+            <Button asChild variant="outline">
+              <Link to="/products">
+                View All Products
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
             </Button>
           </div>
         </div>
@@ -242,9 +247,11 @@ const Index = () => {
                     <div className="text-sm text-muted-foreground">Seconds</div>
                   </div>
                 </div>
-                <Button size="lg" className="btn-hero">
-                  Shop Deal Now
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                <Button asChild size="lg" className="btn-hero">
+                  <Link to="/deals">
+                    Shop Deal Now
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
                 </Button>
               </div>
               <div className="text-center">
@@ -258,61 +265,7 @@ const Index = () => {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="bg-muted py-16">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="text-2xl font-bold">
-                  <span className="text-primary">snap</span>
-                  <span className="text-secondary">N</span>
-                  <span className="text-primary">shop</span>
-                </div>
-              </div>
-              <p className="text-muted-foreground mb-4">
-                Your trusted online marketplace for quality products at unbeatable prices.
-              </p>
-              <div className="flex items-center space-x-2">
-                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                <span className="text-sm font-medium">4.8/5 Customer Rating</span>
-              </div>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-4">Company</h3>
-              <ul className="space-y-2 text-muted-foreground">
-                <li>About Us</li>
-                <li>Careers</li>
-                <li>Press</li>
-                <li>Investor Relations</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-4">Support</h3>
-              <ul className="space-y-2 text-muted-foreground">
-                <li>Help Center</li>
-                <li>Contact Us</li>
-                <li>Track Your Order</li>
-                <li>Returns & Refunds</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-4">Connect</h3>
-              <ul className="space-y-2 text-muted-foreground">
-                <li>Facebook</li>
-                <li>Twitter</li>
-                <li>Instagram</li>
-                <li>YouTube</li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t mt-12 pt-8 text-center text-muted-foreground">
-            <p>&copy; 2024 snapNshop. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
-    </div>
+    </Layout>
   );
 };
 
