@@ -10,6 +10,7 @@ import Layout from "@/components/Layout";
 import ProductCard from "@/components/ProductCard";
 import Breadcrumb from "@/components/Breadcrumb";
 import { toast } from "@/components/ui/use-toast";
+import { getProductById, products } from "@/data/products";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -17,78 +18,48 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState("256GB");
 
-  // Sample product data
-  const product = {
-    id: "1",
-    title: "Apple iPhone 15 Pro Max (256GB) - Natural Titanium",
-    price: 134900,
-    originalPrice: 159900,
-    rating: 4.5,
-    reviews: 2847,
-    discount: 16,
-    images: [
-      "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=600&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1605236453806-6ff36851218e?w=600&h=600&fit=crop",
-      "https://images.unsplash.com/photo-1574944985070-8f3ebc6b79d2?w=600&h=600&fit=crop",
-    ],
-    variants: ["128GB", "256GB", "512GB", "1TB"],
-    colors: ["Natural Titanium", "Blue Titanium", "White Titanium", "Black Titanium"],
-    inStock: true,
-    features: [
-      "6.7-inch Super Retina XDR display",
-      "A17 Pro chip with 6-core GPU",
-      "Pro camera system with 48MP Main camera",
-      "Up to 29 hours video playback",
-      "Action Button for quick shortcuts",
-      "USB-C connector",
-    ],
-    specifications: {
-      "Display": "6.7‑inch Super Retina XDR display",
-      "Capacity": "256GB",
-      "Chip": "A17 Pro chip",
-      "Camera": "Pro camera system (48MP Main, 12MP Ultra Wide, 12MP Telephoto)",
-      "Battery": "Up to 29 hours video playback",
-      "Connectivity": "5G, Wi-Fi 6E, Bluetooth 5.3",
-      "Operating System": "iOS 17",
-    }
-  };
+  // Get product by ID
+  const product = id ? getProductById(id) : null;
+
+  if (!product) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold mb-4">Product Not Found</h1>
+            <p className="text-muted-foreground mb-6">
+              The product you're looking for doesn't exist or has been removed.
+            </p>
+            <Button asChild className="btn-brand">
+              <Link to="/products">Browse All Products</Link>
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  const discount = product.originalPrice 
+    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+    : 0;
 
   const breadcrumbItems = [
-    { label: "Electronics", href: "/category/electronics" },
-    { label: "Smartphones", href: "/category/smartphones" },
+    { label: product.category.charAt(0).toUpperCase() + product.category.slice(1), href: `/category/${product.category}` },
+    { label: product.subcategory.charAt(0).toUpperCase() + product.subcategory.slice(1), href: `/category/${product.category}` },
     { label: product.title }
   ];
 
-  const relatedProducts = [
-    {
-      id: "2",
-      title: "Samsung Galaxy S24 Ultra 5G",
-      price: 124999,
-      originalPrice: 139999,
-      rating: 4.4,
-      reviews: 1923,
-      image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop",
-    },
-    {
-      id: "3",
-      title: "OnePlus 12 5G",
-      price: 64999,
-      originalPrice: 69999,
-      rating: 4.3,
-      reviews: 892,
-      image: "https://images.unsplash.com/photo-1580910051074-3eb694886505?w=400&h=400&fit=crop",
-    },
-    {
-      id: "4",
-      title: "Google Pixel 8 Pro",
-      price: 84999,
-      originalPrice: 94999,
-      rating: 4.5,
-      reviews: 1245,
-      image: "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?w=400&h=400&fit=crop",
-    },
-  ];
+  // Get related products from same category/subcategory
+  const relatedProducts = products
+    .filter(p => p.id !== product.id && (p.category === product.category || p.subcategory === product.subcategory))
+    .slice(0, 3);
+
+  // Set initial variant if product has variants
+  useState(() => {
+    if (product.variants && product.variants.length > 0) {
+      setSelectedVariant(product.variants[0]);
+    }
+  });
 
   const handleAddToCart = () => {
     toast({
@@ -114,36 +85,40 @@ const ProductDetail = () => {
           <div className="space-y-4">
             <div className="aspect-square overflow-hidden rounded-lg border">
               <img
-                src={product.images[selectedImage]}
+                src={product.images ? product.images[selectedImage] : product.image}
                 alt={product.title}
                 className="w-full h-full object-cover"
               />
             </div>
-            <div className="grid grid-cols-4 gap-4">
-              {product.images.map((image, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedImage(index)}
-                  className={`aspect-square rounded-lg border-2 overflow-hidden ${
-                    selectedImage === index ? 'border-primary' : 'border-border'
-                  }`}
-                >
-                  <img
-                    src={image}
-                    alt={`Product ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </button>
-              ))}
-            </div>
+            {product.images && product.images.length > 1 && (
+              <div className="grid grid-cols-4 gap-4">
+                {product.images.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedImage(index)}
+                    className={`aspect-square rounded-lg border-2 overflow-hidden ${
+                      selectedImage === index ? 'border-primary' : 'border-border'
+                    }`}
+                  >
+                    <img
+                      src={image}
+                      alt={`Product ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Product Info */}
           <div className="space-y-6">
             <div>
-              <Badge className="bg-success text-success-foreground mb-2">
-                Bestseller
-              </Badge>
+              {product.isBestseller && (
+                <Badge className="bg-success text-success-foreground mb-2">
+                  Bestseller
+                </Badge>
+              )}
               <h1 className="text-3xl font-bold mb-2">{product.title}</h1>
               <div className="flex items-center space-x-4 mb-4">
                 <div className="flex items-center">
@@ -162,51 +137,64 @@ const ProductDetail = () => {
                 <span className="text-3xl font-bold">
                   ₹{product.price.toLocaleString()}
                 </span>
-                <span className="text-xl text-muted-foreground line-through">
-                  ₹{product.originalPrice.toLocaleString()}
-                </span>
-                <Badge className="bg-secondary text-secondary-foreground">
-                  {product.discount}% OFF
-                </Badge>
+                {product.originalPrice && (
+                  <>
+                    <span className="text-xl text-muted-foreground line-through">
+                      ₹{product.originalPrice.toLocaleString()}
+                    </span>
+                    <Badge className="bg-secondary text-secondary-foreground">
+                      {discount}% OFF
+                    </Badge>
+                  </>
+                )}
               </div>
-              <p className="text-sm text-success font-medium">
-                You save ₹{(product.originalPrice - product.price).toLocaleString()}
-              </p>
+              {product.originalPrice && (
+                <p className="text-sm text-success font-medium">
+                  You save ₹{(product.originalPrice - product.price).toLocaleString()}
+                </p>
+              )}
             </div>
 
             {/* Variants */}
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-semibold mb-2">Storage</h3>
-                <div className="flex space-x-2">
-                  {product.variants.map((variant) => (
-                    <Button
-                      key={variant}
-                      variant={selectedVariant === variant ? "default" : "outline"}
-                      onClick={() => setSelectedVariant(variant)}
-                      className="px-4"
-                    >
-                      {variant}
-                    </Button>
-                  ))}
-                </div>
-              </div>
+            {(product.variants || product.colors) && (
+              <div className="space-y-4">
+                {product.variants && (
+                  <div>
+                    <h3 className="font-semibold mb-2">Variants</h3>
+                    <div className="flex space-x-2 flex-wrap">
+                      {product.variants.map((variant) => (
+                        <Button
+                          key={variant}
+                          variant={selectedVariant === variant ? "default" : "outline"}
+                          onClick={() => setSelectedVariant(variant)}
+                          className="px-4 mb-2"
+                        >
+                          {variant}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-              <div>
-                <h3 className="font-semibold mb-2">Color</h3>
-                <div className="flex space-x-2">
-                  {product.colors.map((color) => (
-                    <Button
-                      key={color}
-                      variant="outline"
-                      className="px-4"
-                    >
-                      {color}
-                    </Button>
-                  ))}
+                {product.colors && (
+                  <div>
+                    <h3 className="font-semibold mb-2">Color</h3>
+                    <div className="flex space-x-2 flex-wrap">
+                      {product.colors.map((color) => (
+                        <Button
+                          key={color}
+                          variant="outline"
+                          className="px-4 mb-2"
+                        >
+                          {color}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Quantity */}
             <div>
@@ -292,26 +280,34 @@ const ProductDetail = () => {
               
               <TabsContent value="features" className="p-6">
                 <h3 className="text-xl font-semibold mb-4">Key Features</h3>
-                <ul className="space-y-2">
-                  {product.features.map((feature, index) => (
-                    <li key={index} className="flex items-start space-x-2">
-                      <span className="text-primary">•</span>
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
+                {product.features ? (
+                  <ul className="space-y-2">
+                    {product.features.map((feature, index) => (
+                      <li key={index} className="flex items-start space-x-2">
+                        <span className="text-primary">•</span>
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-muted-foreground">No detailed features available for this product.</p>
+                )}
               </TabsContent>
               
               <TabsContent value="specifications" className="p-6">
                 <h3 className="text-xl font-semibold mb-4">Technical Specifications</h3>
-                <div className="space-y-4">
-                  {Object.entries(product.specifications).map(([key, value]) => (
-                    <div key={key} className="flex justify-between py-2 border-b">
-                      <span className="font-medium">{key}</span>
-                      <span className="text-muted-foreground">{value}</span>
-                    </div>
-                  ))}
-                </div>
+                {product.specifications ? (
+                  <div className="space-y-4">
+                    {Object.entries(product.specifications).map(([key, value]) => (
+                      <div key={key} className="flex justify-between py-2 border-b">
+                        <span className="font-medium">{key}</span>
+                        <span className="text-muted-foreground">{value}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">No detailed specifications available for this product.</p>
+                )}
               </TabsContent>
               
               <TabsContent value="reviews" className="p-6">
