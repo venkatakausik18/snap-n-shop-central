@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useParams } from "react-router-dom";
 import { Filter, Grid, List, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +12,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const Products = () => {
+  const { category } = useParams();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [priceRange, setPriceRange] = useState([0, 100000]);
 
@@ -74,9 +76,24 @@ const Products = () => {
     },
   ];
 
+  const getCategoryName = (slug?: string) => {
+    const categoryMap: { [key: string]: string } = {
+      'electronics': 'Electronics',
+      'fashion': 'Fashion',
+      'home-kitchen': 'Home & Kitchen',
+      'beauty': 'Beauty & Personal Care',
+      'sports': 'Sports',
+      'books': 'Books',
+      'automotive': 'Automotive'
+    };
+    return categoryMap[slug || ''] || 'All Products';
+  };
+
+  const categoryName = getCategoryName(category);
+
   const breadcrumbItems = [
-    { label: "Electronics", href: "/category/electronics" },
-    { label: "All Products" }
+    ...(category ? [{ label: categoryName, href: `/category/${category}` }] : []),
+    { label: category ? "Products" : "All Products" }
   ];
 
   const brands = ["Apple", "Samsung", "Sony", "OnePlus", "Dell", "HP"];
@@ -89,7 +106,7 @@ const Products = () => {
         
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold mb-2">Electronics</h1>
+            <h1 className="text-3xl font-bold mb-2">{categoryName}</h1>
             <p className="text-muted-foreground">
               Showing 1-{products.length} of 1,247 results
             </p>

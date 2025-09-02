@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Search as SearchIcon, Filter, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 
 const Search = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const query = searchParams.get("q") || "";
   const [searchQuery, setSearchQuery] = useState(query);
 
@@ -76,7 +77,11 @@ const Search = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button size="lg" className="btn-brand px-8">
+            <Button 
+              size="lg" 
+              className="btn-brand px-8"
+              onClick={() => navigate(`/search?q=${encodeURIComponent(searchQuery)}`)}
+            >
               Search
             </Button>
           </div>
@@ -149,7 +154,7 @@ const Search = () => {
                     key={index}
                     variant="outline"
                     className="rounded-full"
-                    onClick={() => setSearchQuery(search)}
+                    onClick={() => navigate(`/search?q=${encodeURIComponent(search)}`)}
                   >
                     {search}
                   </Button>
@@ -159,7 +164,10 @@ const Search = () => {
 
             {/* Categories */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <div className="text-center p-6 border rounded-lg hover:border-primary transition-colors cursor-pointer">
+              <div 
+                className="text-center p-6 border rounded-lg hover:border-primary transition-colors cursor-pointer"
+                onClick={() => navigate('/category/electronics')}
+              >
                 <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
                   <span className="text-2xl">📱</span>
                 </div>
@@ -167,7 +175,10 @@ const Search = () => {
                 <p className="text-sm text-muted-foreground">Phones, Laptops, Gadgets</p>
               </div>
               
-              <div className="text-center p-6 border rounded-lg hover:border-primary transition-colors cursor-pointer">
+              <div 
+                className="text-center p-6 border rounded-lg hover:border-primary transition-colors cursor-pointer"
+                onClick={() => navigate('/category/fashion')}
+              >
                 <div className="w-16 h-16 bg-secondary/10 rounded-full flex items-center justify-center mx-auto mb-3">
                   <span className="text-2xl">👕</span>
                 </div>
@@ -175,7 +186,10 @@ const Search = () => {
                 <p className="text-sm text-muted-foreground">Clothes, Shoes, Accessories</p>
               </div>
               
-              <div className="text-center p-6 border rounded-lg hover:border-primary transition-colors cursor-pointer">
+              <div 
+                className="text-center p-6 border rounded-lg hover:border-primary transition-colors cursor-pointer"
+                onClick={() => navigate('/category/home-kitchen')}
+              >
                 <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-3">
                   <span className="text-2xl">🏠</span>
                 </div>
@@ -183,7 +197,10 @@ const Search = () => {
                 <p className="text-sm text-muted-foreground">Furniture, Appliances</p>
               </div>
               
-              <div className="text-center p-6 border rounded-lg hover:border-primary transition-colors cursor-pointer">
+              <div 
+                className="text-center p-6 border rounded-lg hover:border-primary transition-colors cursor-pointer"
+                onClick={() => navigate('/category/beauty')}
+              >
                 <div className="w-16 h-16 bg-warning/10 rounded-full flex items-center justify-center mx-auto mb-3">
                   <span className="text-2xl">💄</span>
                 </div>

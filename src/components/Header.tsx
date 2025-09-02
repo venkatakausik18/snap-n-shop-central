@@ -1,10 +1,26 @@
 import { Search, ShoppingCart, User, Menu, Heart } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
 const Header = () => {
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const handleSearch = (query: string) => {
+    if (query.trim()) {
+      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSearch(e.currentTarget.value);
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       {/* Top Bar */}
@@ -51,14 +67,9 @@ const Header = () => {
                 type="text"
                 placeholder="Search for products, brands and more..."
                 className="pl-10 pr-4 h-11 w-full border-2 focus:border-primary"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    const query = e.currentTarget.value;
-                    if (query.trim()) {
-                      window.location.href = `/search?q=${encodeURIComponent(query)}`;
-                    }
-                  }
-                }}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={handleKeyPress}
               />
             </div>
           </div>
@@ -103,14 +114,9 @@ const Header = () => {
               type="text"
               placeholder="Search for products..."
               className="pl-10 pr-4 h-11 w-full border-2 focus:border-primary"
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  const query = e.currentTarget.value;
-                  if (query.trim()) {
-                    window.location.href = `/search?q=${encodeURIComponent(query)}`;
-                  }
-                }
-              }}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={handleKeyPress}
             />
           </div>
         </div>
