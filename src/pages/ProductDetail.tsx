@@ -55,11 +55,9 @@ const ProductDetail = () => {
     .slice(0, 3);
 
   // Set initial variant if product has variants
-  useState(() => {
-    if (product.variants && product.variants.length > 0) {
-      setSelectedVariant(product.variants[0]);
-    }
-  });
+  if (product.variants && product.variants.length > 0 && !selectedVariant) {
+    setSelectedVariant(product.variants[0]);
+  }
 
   const handleAddToCart = () => {
     toast({
