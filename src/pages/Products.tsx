@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Filter, Grid, List, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,42 +10,109 @@ import Layout from "@/components/Layout";
 import ProductCard from "@/components/ProductCard";
 import Breadcrumb from "@/components/Breadcrumb";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { products, getProductsByCategory } from "@/data/products";
+import { useProducts, useCategories, Product } from "@/hooks/useProducts";
 
 const Products = () => {
   const { category } = useParams();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [priceRange, setPriceRange] = useState([0, 100000]);
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  const [selectedRatings, setSelectedRatings] = useState<number[]>([]);
+  const [sortBy, setSortBy] = useState('relevance');
 
+  // Fetch data using hooks
+  const { categories } = useCategories();
+  const { products: allProducts, loading, error } = useProducts({
+    category: category,
+    minPrice: priceRange[0],
+    maxPrice: priceRange[1]
+  });
 
-  // Filter products based on category
-  const filteredProducts = category 
-    ? getProductsByCategory(category)
-    : products;
-
-  const getCategoryName = (slug?: string) => {
-    const categoryMap: { [key: string]: string } = {
-      'electronics': 'Electronics',
-      'fashion': 'Fashion',
-      'home-kitchen': 'Home & Kitchen',
-      'beauty': 'Beauty & Personal Care',
-      'sports': 'Sports',
-      'books': 'Books',
-      'automotive': 'Automotive'
-    };
-    return categoryMap[slug || ''] || 'All Products';
-  };
-
-  const categoryName = getCategoryName(category);
+  // Find current category
+  const currentCategory = categories.find(cat => cat.slug === category);
+  const categoryName = currentCategory?.name || 'All Products';
 
   const breadcrumbItems = [
     ...(category ? [{ label: categoryName, href: `/category/${category}` }] : []),
     { label: category ? "Products" : "All Products" }
   ];
 
-  // Get unique brands from filtered products
-  const brands = Array.from(new Set(filteredProducts.map(p => p.brand))).slice(0, 10);
+  // Get unique brands from products
+  const brands = Array.from(new Set(allProducts.map(p => p.brand))).slice(0, 10);
   const ratings = [4, 3, 2, 1];
+
+  // Apply additional filters
+  const filteredProducts = allProducts.filter(product => {
+    // Brand filter
+    if (selectedBrands.length > 0 && !selectedBrands.includes(product.brand)) {
+      return false;
+    }
+    
+    // Rating filter
+    if (selectedRatings.length > 0 && !selectedRatings.some(rating => product.rating >= rating)) {
+      return false;
+    }
+    
+    return true;
+  });
+
+  // Sort products
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    switch (sortBy) {
+      case 'price-low':
+        return a.price - b.price;
+      case 'price-high':
+        return b.price - a.price;
+      case 'rating':
+        return b.rating - a.rating;
+      case 'newest':
+        return 0; // Would need created_at field
+      default:
+        return 0; // relevance
+    }
+  });
+
+  const handleBrandChange = (brand: string, checked: boolean) => {
+    if (checked) {
+      setSelectedBrands(prev => [...prev, brand]);
+    } else {
+      setSelectedBrands(prev => prev.filter(b => b !== brand));
+    }
+  };
+
+  const handleRatingChange = (rating: number, checked: boolean) => {
+    if (checked) {
+      setSelectedRatings(prev => [...prev, rating]);
+    } else {
+      setSelectedRatings(prev => prev.filter(r => r !== rating));
+    }
+  };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-6">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-muted-foreground">Loading products...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-6">
+          <div className="text-center">
+            <p className="text-destructive mb-4">Error loading products: {error}</p>
+            <Button onClick={() => window.location.reload()}>Try Again</Button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -56,12 +123,12 @@ const Products = () => {
           <div>
             <h1 className="text-3xl font-bold mb-2">{categoryName}</h1>
             <p className="text-muted-foreground">
-              Showing 1-{filteredProducts.length} of {filteredProducts.length} results
+              Showing 1-{sortedProducts.length} of {sortedProducts.length} results
             </p>
           </div>
           
           <div className="flex items-center space-x-4">
-            <Select defaultValue="relevance">
+            <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
@@ -128,7 +195,11 @@ const Products = () => {
                   <div className="space-y-2">
                     {brands.map((brand) => (
                       <div key={brand} className="flex items-center space-x-2">
-                        <Checkbox id={brand} />
+                        <Checkbox 
+                          id={brand} 
+                          checked={selectedBrands.includes(brand)}
+                          onCheckedChange={(checked) => handleBrandChange(brand, !!checked)}
+                        />
                         <label htmlFor={brand} className="text-sm cursor-pointer">
                           {brand}
                         </label>
@@ -143,7 +214,11 @@ const Products = () => {
                   <div className="space-y-2">
                     {ratings.map((rating) => (
                       <div key={rating} className="flex items-center space-x-2">
-                        <Checkbox id={`rating-${rating}`} />
+                        <Checkbox 
+                          id={`rating-${rating}`}
+                          checked={selectedRatings.includes(rating)}
+                          onCheckedChange={(checked) => handleRatingChange(rating, !!checked)}
+                        />
                         <label htmlFor={`rating-${rating}`} className="text-sm cursor-pointer">
                           {rating}★ & above
                         </label>
@@ -192,8 +267,18 @@ const Products = () => {
               ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" 
               : "space-y-4"
             }>
-              {filteredProducts.map((product) => (
-                <ProductCard key={product.id} {...product} />
+              {sortedProducts.map((product) => (
+                <ProductCard 
+                  key={product.id} 
+                  id={product.id}
+                  title={product.title}
+                  price={product.price}
+                  originalPrice={product.original_price}
+                  rating={product.rating}
+                  reviews={product.review_count}
+                  image={product.images[0] || '/placeholder.svg'}
+                  isBestseller={product.is_bestseller}
+                />
               ))}
             </div>
 

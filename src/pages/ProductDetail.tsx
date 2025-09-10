@@ -10,7 +10,7 @@ import Layout from "@/components/Layout";
 import ProductCard from "@/components/ProductCard";
 import Breadcrumb from "@/components/Breadcrumb";
 import { toast } from "@/components/ui/use-toast";
-import { getProductById, products } from "@/data/products";
+import { useProduct, useProducts } from "@/hooks/useProducts";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -18,10 +18,29 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState("256GB");
 
-  // Get product by ID
-  const product = id ? getProductById(id) : null;
+  // Get product by ID using Supabase
+  const { product, loading, error } = useProduct(id || '');
+  
+  // Get related products
+  const { products: relatedProducts } = useProducts({
+    category: product?.category.slug,
+    subcategory: product?.subcategory?.slug
+  });
 
-  if (!product) {
+  if (loading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-muted-foreground">Loading product...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error || !product) {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-12">
@@ -39,19 +58,19 @@ const ProductDetail = () => {
     );
   }
 
-  const discount = product.originalPrice 
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+  const discount = product.original_price 
+    ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
     : 0;
 
   const breadcrumbItems = [
-    { label: product.category.charAt(0).toUpperCase() + product.category.slice(1), href: `/category/${product.category}` },
-    { label: product.subcategory.charAt(0).toUpperCase() + product.subcategory.slice(1), href: `/category/${product.category}` },
+    { label: product.category.name, href: `/category/${product.category.slug}` },
+    ...(product.subcategory ? [{ label: product.subcategory.name, href: `/category/${product.category.slug}` }] : []),
     { label: product.title }
   ];
 
-  // Get related products from same category/subcategory
-  const relatedProducts = products
-    .filter(p => p.id !== product.id && (p.category === product.category || p.subcategory === product.subcategory))
+  // Filter related products (exclude current product)
+  const filteredRelatedProducts = relatedProducts
+    .filter(p => p.id !== product.id)
     .slice(0, 3);
 
   // Set initial variant if product has variants
