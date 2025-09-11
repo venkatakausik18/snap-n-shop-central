@@ -102,7 +102,7 @@ const ProductDetail = () => {
           <div className="space-y-4">
             <div className="aspect-square overflow-hidden rounded-lg border">
               <img
-                src={product.images ? product.images[selectedImage] : product.image}
+                src={product.images ? product.images[selectedImage] : (product.images?.[0] || '/placeholder.svg')}
                 alt={product.title}
                 className="w-full h-full object-cover"
               />
@@ -131,7 +131,7 @@ const ProductDetail = () => {
           {/* Product Info */}
           <div className="space-y-6">
             <div>
-              {product.isBestseller && (
+              {product.is_bestseller && (
                 <Badge className="bg-success text-success-foreground mb-2">
                   Bestseller
                 </Badge>
@@ -143,7 +143,7 @@ const ProductDetail = () => {
                   <span className="ml-1 font-medium">{product.rating}</span>
                 </div>
                 <span className="text-muted-foreground">
-                  ({product.reviews.toLocaleString()} reviews)
+                  ({product.review_count?.toLocaleString() || 0} reviews)
                 </span>
               </div>
             </div>
@@ -154,10 +154,10 @@ const ProductDetail = () => {
                 <span className="text-3xl font-bold">
                   ₹{product.price.toLocaleString()}
                 </span>
-                {product.originalPrice && (
+                {product.original_price && (
                   <>
                     <span className="text-xl text-muted-foreground line-through">
-                      ₹{product.originalPrice.toLocaleString()}
+                      ₹{product.original_price.toLocaleString()}
                     </span>
                     <Badge className="bg-secondary text-secondary-foreground">
                       {discount}% OFF
@@ -165,9 +165,9 @@ const ProductDetail = () => {
                   </>
                 )}
               </div>
-              {product.originalPrice && (
+              {product.original_price && (
                 <p className="text-sm text-success font-medium">
-                  You save ₹{(product.originalPrice - product.price).toLocaleString()}
+                  You save ₹{(product.original_price - product.price).toLocaleString()}
                 </p>
               )}
             </div>
@@ -344,9 +344,9 @@ const ProductDetail = () => {
                           />
                         ))}
                       </div>
-                      <p className="text-muted-foreground">
-                        Based on {product.reviews.toLocaleString()} reviews
-                      </p>
+                       <p className="text-muted-foreground">
+                        Based on {product.review_count?.toLocaleString() || 0} reviews
+                       </p>
                     </div>
                   </div>
                   
@@ -404,8 +404,18 @@ const ProductDetail = () => {
         <div>
           <h2 className="text-2xl font-bold mb-6">Related Products</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {relatedProducts.map((product) => (
-              <ProductCard key={product.id} {...product} />
+            {filteredRelatedProducts.map((relatedProduct) => (
+              <ProductCard 
+                key={relatedProduct.id} 
+                id={relatedProduct.id}
+                title={relatedProduct.title}
+                price={relatedProduct.price}
+                originalPrice={relatedProduct.original_price || undefined}
+                rating={relatedProduct.rating || 0}
+                reviews={relatedProduct.review_count || 0}
+                image={relatedProduct.images?.[0] || '/placeholder.svg'}
+                isBestseller={relatedProduct.is_bestseller}
+              />
             ))}
           </div>
         </div>
