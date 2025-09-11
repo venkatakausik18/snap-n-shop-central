@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import Layout from "@/components/Layout";
 import ProductCard from "@/components/ProductCard";
 import Breadcrumb from "@/components/Breadcrumb";
-import { products } from "@/data/products";
+import { useProducts, useCategories } from "@/hooks/useProducts";
 
 const Search = () => {
   const [searchParams] = useSearchParams();
@@ -15,86 +15,12 @@ const Search = () => {
   const query = searchParams.get("q") || "";
   const [searchQuery, setSearchQuery] = useState(query);
 
-  // Advanced search function
-  const searchProducts = (searchTerm: string) => {
-    if (!searchTerm.trim()) return [];
-    
-    const searchWords = searchTerm.toLowerCase().split(' ');
-    
-    return products.filter(product => {
-      const searchableText = [
-        product.title,
-        product.category,
-        product.subcategory,
-        product.brand,
-        ...product.keywords
-      ].join(' ').toLowerCase();
-      
-      // Score-based matching for better relevance
-      let score = 0;
-      
-      // Exact title match gets highest score
-      if (product.title.toLowerCase().includes(searchTerm.toLowerCase())) {
-        score += 100;
-      }
-      
-      // Brand match
-      if (product.brand.toLowerCase().includes(searchTerm.toLowerCase())) {
-        score += 50;
-      }
-      
-      // Keyword matches
-      searchWords.forEach(word => {
-        if (product.keywords.some(keyword => keyword.includes(word))) {
-          score += 30;
-        }
-        if (searchableText.includes(word)) {
-          score += 10;
-        }
-      });
-      
-      return score > 0;
-    }).sort((a, b) => {
-      // Sort by relevance score (calculated above)
-      const aScore = calculateRelevanceScore(a, searchTerm);
-      const bScore = calculateRelevanceScore(b, searchTerm);
-      return bScore - aScore;
-    });
-  };
-
-  const calculateRelevanceScore = (product: any, searchTerm: string) => {
-    const searchWords = searchTerm.toLowerCase().split(' ');
-    const searchableText = [
-      product.title,
-      product.category,
-      product.subcategory,
-      product.brand,
-      ...product.keywords
-    ].join(' ').toLowerCase();
-    
-    let score = 0;
-    
-    if (product.title.toLowerCase().includes(searchTerm.toLowerCase())) {
-      score += 100;
-    }
-    
-    if (product.brand.toLowerCase().includes(searchTerm.toLowerCase())) {
-      score += 50;
-    }
-    
-    searchWords.forEach(word => {
-      if (product.keywords.some(keyword => keyword.includes(word))) {
-        score += 30;
-      }
-      if (searchableText.includes(word)) {
-        score += 10;
-      }
-    });
-    
-    return score;
-  };
-
-  const searchResults = query ? searchProducts(query) : [];
+  // Use Supabase products hook with search filter
+  const { products: searchResults, loading } = useProducts({ 
+    search: query.trim() || undefined 
+  });
+  
+  const { categories } = useCategories();
 
   const popularSearches = [
     "iPhone 15", "Samsung Galaxy", "Laptop", "Headphones", "Smart Watch",
@@ -142,7 +68,7 @@ const Search = () => {
                 Search Results {query && `for "${query}"`}
               </h1>
               <p className="text-muted-foreground">
-                Showing {searchResults.length} of {searchResults.length} results
+                {loading ? "Searching..." : `Showing ${searchResults.length} results`}
               </p>
             </div>
             
@@ -166,10 +92,32 @@ const Search = () => {
             </div>
 
             {/* Search Results */}
-            {searchResults.length > 0 ? (
+            {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
+                {[...Array(8)].map((_, index) => (
+                  <div key={index} className="border rounded-lg p-4 animate-pulse">
+                    <div className="aspect-square bg-muted rounded-lg mb-4"></div>
+                    <div className="space-y-2">
+                      <div className="h-4 bg-muted rounded w-3/4"></div>
+                      <div className="h-4 bg-muted rounded w-1/2"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : searchResults.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
                 {searchResults.map((product) => (
-                  <ProductCard key={product.id} {...product} />
+                  <ProductCard 
+                    key={product.id}
+                    id={product.id}
+                    title={product.title}
+                    price={product.price}
+                    originalPrice={product.original_price || undefined}
+                    rating={product.rating || 0}
+                    reviews={product.review_count || 0}
+                    image={product.images?.[0] || '/placeholder.svg'}
+                    isBestseller={product.is_bestseller}
+                  />
                 ))}
               </div>
             ) : (
@@ -228,49 +176,24 @@ const Search = () => {
 
             {/* Categories */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <div 
-                className="text-center p-6 border rounded-lg hover:border-primary transition-colors cursor-pointer"
-                onClick={() => navigate('/category/electronics')}
-              >
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-2xl">📱</span>
+              {categories.slice(0, 4).map((category) => (
+                <div 
+                  key={category.id}
+                  className="text-center p-6 border rounded-lg hover:border-primary transition-colors cursor-pointer"
+                  onClick={() => navigate(`/category/${category.slug}`)}
+                >
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <span className="text-2xl">
+                      {category.name === 'Electronics' ? '📱' : 
+                       category.name === 'Fashion' ? '👕' :
+                       category.name === 'Home & Kitchen' ? '🏠' :
+                       category.name === 'Beauty' ? '💄' : '📦'}
+                    </span>
+                  </div>
+                  <h3 className="font-semibold">{category.name}</h3>
+                  <p className="text-sm text-muted-foreground">{category.description || 'Browse products'}</p>
                 </div>
-                <h3 className="font-semibold">Electronics</h3>
-                <p className="text-sm text-muted-foreground">Phones, Laptops, Gadgets</p>
-              </div>
-              
-              <div 
-                className="text-center p-6 border rounded-lg hover:border-primary transition-colors cursor-pointer"
-                onClick={() => navigate('/category/fashion')}
-              >
-                <div className="w-16 h-16 bg-secondary/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-2xl">👕</span>
-                </div>
-                <h3 className="font-semibold">Fashion</h3>
-                <p className="text-sm text-muted-foreground">Clothes, Shoes, Accessories</p>
-              </div>
-              
-              <div 
-                className="text-center p-6 border rounded-lg hover:border-primary transition-colors cursor-pointer"
-                onClick={() => navigate('/category/home-kitchen')}
-              >
-                <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-2xl">🏠</span>
-                </div>
-                <h3 className="font-semibold">Home & Kitchen</h3>
-                <p className="text-sm text-muted-foreground">Furniture, Appliances</p>
-              </div>
-              
-              <div 
-                className="text-center p-6 border rounded-lg hover:border-primary transition-colors cursor-pointer"
-                onClick={() => navigate('/category/beauty')}
-              >
-                <div className="w-16 h-16 bg-warning/10 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-2xl">💄</span>
-                </div>
-                <h3 className="font-semibold">Beauty</h3>
-                <p className="text-sm text-muted-foreground">Skincare, Makeup</p>
-              </div>
+              ))}
             </div>
           </div>
         )}

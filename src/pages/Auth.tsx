@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, User, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,10 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import Layout from "@/components/Layout";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 const Auth = () => {
+  const navigate = useNavigate();
+  const { user, loading, signIn, signUp, signInWithGoogle } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [loginData, setLoginData] = useState({
     email: "",
     password: "",
@@ -24,17 +28,47 @@ const Auth = () => {
     confirmPassword: "",
   });
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (user && !loading) {
+      navigate('/');
+    }
+  }, [user, loading, navigate]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Login successful!",
-      description: "Welcome back to snapNshop!",
-    });
-    // Redirect to home or previous page
+    setIsLoading(true);
+
+    try {
+      const { error } = await signIn(loginData.email, loginData.password);
+      
+      if (error) {
+        toast({
+          title: "Login failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Login successful!",
+          description: "Welcome back to snapNshop!",
+        });
+        navigate('/');
+      }
+    } catch (error) {
+      toast({
+        title: "Login failed",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (signupData.password !== signupData.confirmPassword) {
       toast({
         title: "Password mismatch",
@@ -43,18 +77,82 @@ const Auth = () => {
       });
       return;
     }
-    toast({
-      title: "Account created!",
-      description: "Welcome to snapNshop! Please verify your email.",
-    });
+
+    if (signupData.password.length < 6) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { error } = await signUp(signupData.email, signupData.password, {
+        first_name: signupData.name.split(' ')[0] || signupData.name,
+        last_name: signupData.name.split(' ').slice(1).join(' ') || '',
+      });
+      
+      if (error) {
+        toast({
+          title: "Signup failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Account created!",
+          description: "Please check your email to verify your account.",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Signup failed", 
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSocialLogin = (provider: string) => {
-    toast({
-      title: `${provider} login`,
-      description: `Logging in with ${provider}...`,
-    });
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    try {
+      const { error } = await signInWithGoogle();
+      
+      if (error) {
+        toast({
+          title: "Google login failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Google login failed",
+        description: "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -129,8 +227,8 @@ const Auth = () => {
                       </Link>
                     </div>
                     
-                    <Button type="submit" className="w-full btn-brand">
-                      Sign In
+                    <Button type="submit" className="w-full btn-brand" disabled={isLoading}>
+                      {isLoading ? "Signing In..." : "Sign In"}
                     </Button>
                   </form>
                   
@@ -149,7 +247,8 @@ const Auth = () => {
                     <div className="grid grid-cols-2 gap-3 mt-6">
                       <Button
                         variant="outline"
-                        onClick={() => handleSocialLogin("Google")}
+                        onClick={handleGoogleLogin}
+                        disabled={isLoading}
                       >
                         <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
                           <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -161,7 +260,8 @@ const Auth = () => {
                       </Button>
                       <Button
                         variant="outline"
-                        onClick={() => handleSocialLogin("Facebook")}
+                        disabled
+                        className="opacity-50"
                       >
                         <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
@@ -268,8 +368,8 @@ const Auth = () => {
                       </div>
                     </div>
                     
-                    <Button type="submit" className="w-full btn-brand">
-                      Create Account
+                    <Button type="submit" className="w-full btn-brand" disabled={isLoading}>
+                      {isLoading ? "Creating Account..." : "Create Account"}
                     </Button>
                   </form>
                   
@@ -288,7 +388,8 @@ const Auth = () => {
                     <div className="grid grid-cols-2 gap-3 mt-6">
                       <Button
                         variant="outline"
-                        onClick={() => handleSocialLogin("Google")}
+                        onClick={handleGoogleLogin}
+                        disabled={isLoading}
                       >
                         <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
                           <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -300,7 +401,8 @@ const Auth = () => {
                       </Button>
                       <Button
                         variant="outline"
-                        onClick={() => handleSocialLogin("Facebook")}
+                        disabled
+                        className="opacity-50"
                       >
                         <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
