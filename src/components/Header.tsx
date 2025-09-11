@@ -12,11 +12,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
+import { useCart } from "@/hooks/useCart";
 import { toast } from "@/hooks/use-toast";
 
 const Header = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { cartItemCount } = useCart();
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleSearch = (query: string) => {
@@ -112,12 +114,14 @@ const Header = () => {
             <Button asChild variant="ghost" size="icon" className="relative">
               <Link to="/cart">
                 <ShoppingCart className="h-5 w-5" />
-                <Badge 
-                  variant="secondary" 
-                  className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
-                >
-                  3
-                </Badge>
+                {cartItemCount > 0 && (
+                  <Badge 
+                    variant="secondary" 
+                    className="absolute -top-2 -right-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+                  >
+                    {cartItemCount > 99 ? '99+' : cartItemCount}
+                  </Badge>
+                )}
               </Link>
             </Button>
 

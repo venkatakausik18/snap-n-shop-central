@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Star, Heart, Share2, ShoppingCart, Truck, Shield, RotateCcw, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,14 +9,16 @@ import { Separator } from "@/components/ui/separator";
 import Layout from "@/components/Layout";
 import ProductCard from "@/components/ProductCard";
 import Breadcrumb from "@/components/Breadcrumb";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 import { useProduct, useProducts } from "@/hooks/useProducts";
+import { useCart } from "@/hooks/useCart";
 
 const ProductDetail = () => {
   const { id } = useParams();
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [selectedVariant, setSelectedVariant] = useState("256GB");
+  const [selectedVariant, setSelectedVariant] = useState("");
+  const { addToCart } = useCart();
 
   // Get product by ID using Supabase
   const { product, loading, error } = useProduct(id || '');
@@ -74,15 +76,22 @@ const ProductDetail = () => {
     .slice(0, 3);
 
   // Set initial variant if product has variants
-  if (product.variants && product.variants.length > 0 && !selectedVariant) {
-    setSelectedVariant(product.variants[0]);
-  }
+  useEffect(() => {
+    if (product?.variants && product.variants.length > 0 && !selectedVariant) {
+      setSelectedVariant(product.variants[0]);
+    }
+  }, [product, selectedVariant]);
 
   const handleAddToCart = () => {
-    toast({
-      title: "Added to cart!",
-      description: `${product.title} has been added to your cart.`,
-    });
+    if (!product) return;
+
+    const options = {
+      selectedVariant: product.variants ? selectedVariant : undefined,
+      selectedColor: product.colors && product.colors.length > 0 ? product.colors[0] : undefined,
+      selectedSize: product.sizes && product.sizes.length > 0 ? product.sizes[0] : undefined,
+    };
+
+    addToCart(product.id, product.price, quantity, options);
   };
 
   const handleAddToWishlist = () => {

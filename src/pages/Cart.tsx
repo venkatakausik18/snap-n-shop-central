@@ -7,72 +7,19 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import Layout from "@/components/Layout";
 import Breadcrumb from "@/components/Breadcrumb";
-import { toast } from "@/components/ui/use-toast";
-
-interface CartItem {
-  id: string;
-  title: string;
-  price: number;
-  originalPrice: number;
-  quantity: number;
-  image: string;
-  variant?: string;
-  seller: string;
-  inStock: boolean;
-}
+import { toast } from "@/hooks/use-toast";
+import { useCart } from "@/hooks/useCart";
 
 const Cart = () => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    {
-      id: "1",
-      title: "Apple iPhone 15 Pro Max (256GB) - Natural Titanium",
-      price: 134900,
-      originalPrice: 159900,
-      quantity: 1,
-      image: "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=200&h=200&fit=crop",
-      variant: "256GB, Natural Titanium",
-      seller: "Apple Store",
-      inStock: true,
-    },
-    {
-      id: "2",
-      title: "Sony WH-1000XM5 Wireless Noise Canceling Headphones",
-      price: 29990,
-      originalPrice: 34990,
-      quantity: 2,
-      image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200&h=200&fit=crop",
-      seller: "Sony Official",
-      inStock: true,
-    },
-  ]);
-
+  const { cartItems, loading, cartTotal, cartItemCount, updateCartItemQuantity, removeFromCart } = useCart();
   const [couponCode, setCouponCode] = useState("");
 
   const breadcrumbItems = [
     { label: "Shopping Cart" }
   ];
 
-  const updateQuantity = (id: string, newQuantity: number) => {
-    if (newQuantity < 1) return;
-    setCartItems(items =>
-      items.map(item =>
-        item.id === id ? { ...item, quantity: newQuantity } : item
-      )
-    );
-  };
-
-  const removeItem = (id: string) => {
-    setCartItems(items => items.filter(item => item.id !== id));
-    toast({
-      title: "Item removed",
-      description: "Item has been removed from your cart.",
-    });
-  };
-
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const savings = cartItems.reduce((sum, item) => sum + ((item.originalPrice - item.price) * item.quantity), 0);
-  const deliveryFee = subtotal > 49900 ? 0 : 99;
-  const total = subtotal + deliveryFee;
+  const deliveryFee = cartTotal > 49900 ? 0 : 99;
+  const total = cartTotal + deliveryFee;
 
   const applyCoupon = () => {
     if (couponCode === "SAVE10") {
@@ -88,6 +35,19 @@ const Cart = () => {
       });
     }
   };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-muted-foreground">Loading your cart...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   if (cartItems.length === 0) {
     return (
@@ -122,7 +82,7 @@ const Cart = () => {
             <div className="flex items-center justify-between mb-6">
               <h1 className="text-3xl font-bold">Shopping Cart</h1>
               <span className="text-muted-foreground">
-                {cartItems.length} item{cartItems.length !== 1 ? 's' : ''}
+                {cartItemCount} item{cartItemCount !== 1 ? 's' : ''}
               </span>
             </div>
 
@@ -132,41 +92,40 @@ const Cart = () => {
                   <CardContent className="p-6">
                     <div className="flex items-start space-x-4">
                       <img
-                        src={item.image}
-                        alt={item.title}
+                        src={item.product?.images?.[0] || '/placeholder.svg'}
+                        alt={item.product?.title || 'Product'}
                         className="w-24 h-24 object-cover rounded-lg"
                       />
                       
                       <div className="flex-1 space-y-2">
                         <Link 
-                          to={`/product/${item.id}`}
+                          to={`/product/${item.product_id}`}
                           className="text-lg font-medium hover:text-primary transition-colors line-clamp-2"
                         >
-                          {item.title}
+                          {item.product?.title || 'Product'}
                         </Link>
                         
-                        {item.variant && (
-                          <p className="text-sm text-muted-foreground">{item.variant}</p>
+                        {(item.selected_variant || item.selected_color || item.selected_size) && (
+                          <div className="text-sm text-muted-foreground space-y-1">
+                            {item.selected_variant && <p>Variant: {item.selected_variant}</p>}
+                            {item.selected_color && <p>Color: {item.selected_color}</p>}
+                            {item.selected_size && <p>Size: {item.selected_size}</p>}
+                          </div>
                         )}
                         
                         <p className="text-sm text-muted-foreground">
-                          Sold by: {item.seller}
+                          Sold by: {item.product?.brand || 'snapNshop'}
                         </p>
                         
                         <div className="flex items-center space-x-3">
                           <span className="text-lg font-bold">
                             ₹{item.price.toLocaleString()}
                           </span>
-                          <span className="text-sm text-muted-foreground line-through">
-                            ₹{item.originalPrice.toLocaleString()}
-                          </span>
                         </div>
 
-                        {item.inStock ? (
-                          <span className="text-sm text-success font-medium">In Stock</span>
-                        ) : (
-                          <span className="text-sm text-destructive font-medium">Out of Stock</span>
-                        )}
+                        <span className="text-sm text-success font-medium">
+                          {(item.product?.stock_quantity || 0) > 0 ? 'In Stock' : 'Out of Stock'}
+                        </span>
                       </div>
 
                       <div className="flex flex-col items-end space-y-4">
@@ -175,7 +134,7 @@ const Cart = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            onClick={() => updateCartItemQuantity(item.id, item.quantity - 1)}
                             disabled={item.quantity <= 1}
                           >
                             <Minus className="h-4 w-4" />
@@ -186,7 +145,7 @@ const Cart = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            onClick={() => updateCartItemQuantity(item.id, item.quantity + 1)}
                           >
                             <Plus className="h-4 w-4" />
                           </Button>
@@ -196,7 +155,7 @@ const Cart = () => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => removeItem(item.id)}
+                          onClick={() => removeFromCart(item.id)}
                           className="text-destructive hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4 mr-2" />
@@ -237,13 +196,8 @@ const Cart = () => {
                 {/* Price Breakdown */}
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span>Subtotal ({cartItems.length} items)</span>
-                    <span>₹{subtotal.toLocaleString()}</span>
-                  </div>
-                  
-                  <div className="flex justify-between text-success">
-                    <span>Savings</span>
-                    <span>-₹{savings.toLocaleString()}</span>
+                    <span>Subtotal ({cartItemCount} items)</span>
+                    <span>₹{cartTotal.toLocaleString()}</span>
                   </div>
                   
                   <div className="flex justify-between">
@@ -259,7 +213,7 @@ const Cart = () => {
                   
                   {deliveryFee > 0 && (
                     <p className="text-xs text-muted-foreground">
-                      Add ₹{(49900 - subtotal).toLocaleString()} more for FREE delivery
+                      Add ₹{(49900 - cartTotal).toLocaleString()} more for FREE delivery
                     </p>
                   )}
                 </div>
