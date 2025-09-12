@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
+import Checkout from "./pages/Checkout";
 import Auth from "./pages/Auth";
 import Search from "./pages/Search";
 import Account from "./pages/Account";
@@ -26,7 +27,7 @@ const App = () => (
           <Route path="/category/:category" element={<Products />} />
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/cart" element={<Cart />} />
-          <Route path="/checkout" element={<Cart />} />
+          <Route path="/checkout" element={<Checkout />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/auth/login" element={<Auth />} />
           <Route path="/auth/register" element={<Auth />} />
