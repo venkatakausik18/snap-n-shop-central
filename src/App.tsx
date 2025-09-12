@@ -11,6 +11,7 @@ import Checkout from "./pages/Checkout";
 import Auth from "./pages/Auth";
 import Search from "./pages/Search";
 import Account from "./pages/Account";
+import Orders from "./pages/Orders";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,7 +34,7 @@ const App = () => (
           <Route path="/auth/register" element={<Auth />} />
           <Route path="/search" element={<Search />} />
           <Route path="/account" element={<Account />} />
-          <Route path="/account/orders" element={<Account />} />
+          <Route path="/account/orders" element={<Orders />} />
           <Route path="/account/wishlist" element={<Account />} />
           <Route path="/account/addresses" element={<Account />} />
           <Route path="/account/payments" element={<Account />} />

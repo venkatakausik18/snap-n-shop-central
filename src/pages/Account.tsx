@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { User, Package, Heart, MapPin, CreditCard, Settings, LogOut, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,44 +8,21 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import Layout from "@/components/Layout";
 import Breadcrumb from "@/components/Breadcrumb";
+import { useAuth } from "@/hooks/useAuth";
+import { useOrders } from "@/hooks/useOrders";
+import { useLocation } from "react-router-dom";
 
 const Account = () => {
-  const [user] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    phone: "+91 98765 43210",
-    avatar: "",
-    joinDate: "January 2023",
-    totalOrders: 12,
-    totalSpent: 85420,
-  });
-
-  const recentOrders = [
-    {
-      id: "ORD-001",
-      date: "2024-01-15",
-      status: "Delivered",
-      total: 23990,
-      items: 2,
-      image: "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=100&h=100&fit=crop"
-    },
-    {
-      id: "ORD-002", 
-      date: "2024-01-10",
-      status: "In Transit",
-      total: 15999,
-      items: 1,
-      image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=100&h=100&fit=crop"
-    },
-    {
-      id: "ORD-003",
-      date: "2024-01-05",
-      status: "Delivered",
-      total: 45499,
-      items: 3,
-      image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=100&h=100&fit=crop"
-    },
-  ];
+  const { user, signOut } = useAuth();
+  const { orders } = useOrders();
+  const location = useLocation();
+  
+  // Get current route to highlight active nav item
+  const currentPath = location.pathname;
+  
+  const recentOrders = orders.slice(0, 3); // Show only 3 most recent orders
+  
+  const totalSpent = orders.reduce((sum, order) => sum + order.total_amount, 0);
 
   const breadcrumbItems = [
     { label: "My Account" }
@@ -53,16 +30,50 @@ const Account = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Delivered":
+      case "delivered":
         return "bg-success text-success-foreground";
-      case "In Transit":
-        return "bg-warning text-warning-foreground";
-      case "Processing":
+      case "shipped":
+      case "processing":
         return "bg-primary text-primary-foreground";
+      case "confirmed":
+        return "bg-warning text-warning-foreground";
+      case "cancelled":
+        return "bg-destructive text-destructive-foreground";
       default:
         return "bg-muted text-muted-foreground";
     }
   };
+
+  const getNavItemClass = (path: string) => {
+    return currentPath === path
+      ? "flex items-center space-x-3 px-4 py-3 rounded-lg bg-primary/10 text-primary font-medium"
+      : "flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors";
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
+  if (!user) {
+    return (
+      <Layout>
+        <div className="container mx-auto px-4 py-12">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Please log in to access your account</h2>
+            <Button asChild>
+              <Link to="/auth">Sign In</Link>
+            </Button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Check if we should render Orders component - remove this since we have separate routes
+  // if (currentPath === "/account/orders") {
+  //   const Orders = require("./Orders").default;
+  //   return <Orders />;
+  // }
 
   return (
     <Layout>
@@ -76,56 +87,63 @@ const Account = () => {
               <CardContent className="p-0">
                 <div className="p-6 text-center border-b">
                   <Avatar className="w-20 h-20 mx-auto mb-4">
-                    <AvatarImage src={user.avatar} />
+                    <AvatarImage src={user.user_metadata?.avatar_url} />
                     <AvatarFallback className="text-lg">
-                      {user.name.split(' ').map(n => n[0]).join('')}
+                      {user.email?.split('@')[0].charAt(0).toUpperCase() || 'U'}
                     </AvatarFallback>
                   </Avatar>
-                  <h2 className="text-xl font-semibold mb-1">{user.name}</h2>
+                  <h2 className="text-xl font-semibold mb-1">
+                    {user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
+                  </h2>
                   <p className="text-muted-foreground text-sm mb-2">{user.email}</p>
-                  <Badge variant="secondary">Member since {user.joinDate}</Badge>
+                  <Badge variant="secondary">
+                    Member since {new Date(user.created_at).toLocaleDateString('en-IN', { 
+                      year: 'numeric', 
+                      month: 'long' 
+                    })}
+                  </Badge>
                 </div>
                 
                 <nav className="p-2">
                   <div className="space-y-1">
                     <Link
                       to="/account"
-                      className="flex items-center space-x-3 px-4 py-3 rounded-lg bg-primary/10 text-primary font-medium"
+                      className={getNavItemClass("/account")}
                     >
                       <User className="h-5 w-5" />
                       <span>Profile</span>
                     </Link>
                     <Link
                       to="/account/orders"
-                      className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors"
+                      className={getNavItemClass("/account/orders")}
                     >
                       <Package className="h-5 w-5" />
                       <span>My Orders</span>
                     </Link>
                     <Link
                       to="/account/wishlist"
-                      className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors"
+                      className={getNavItemClass("/account/wishlist")}
                     >
                       <Heart className="h-5 w-5" />
                       <span>Wishlist</span>
                     </Link>
                     <Link
                       to="/account/addresses"
-                      className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors"
+                      className={getNavItemClass("/account/addresses")}
                     >
                       <MapPin className="h-5 w-5" />
                       <span>Addresses</span>
                     </Link>
                     <Link
                       to="/account/payments"
-                      className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors"
+                      className={getNavItemClass("/account/payments")}
                     >
                       <CreditCard className="h-5 w-5" />
                       <span>Payment Methods</span>
                     </Link>
                     <Link
                       to="/account/settings"
-                      className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors"
+                      className={getNavItemClass("/account/settings")}
                     >
                       <Settings className="h-5 w-5" />
                       <span>Settings</span>
@@ -134,7 +152,10 @@ const Account = () => {
                   
                   <Separator className="my-4" />
                   
-                  <button className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors text-destructive w-full">
+                  <button 
+                    onClick={handleSignOut}
+                    className="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-muted transition-colors text-destructive w-full"
+                  >
                     <LogOut className="h-5 w-5" />
                     <span>Sign Out</span>
                   </button>
@@ -159,7 +180,7 @@ const Account = () => {
                 <Card>
                   <CardContent className="p-6 text-center">
                     <div className="text-3xl font-bold text-primary mb-2">
-                      {user.totalOrders}
+                      {orders.length}
                     </div>
                     <p className="text-muted-foreground">Total Orders</p>
                   </CardContent>
@@ -168,7 +189,7 @@ const Account = () => {
                 <Card>
                   <CardContent className="p-6 text-center">
                     <div className="text-3xl font-bold text-success mb-2">
-                      ₹{user.totalSpent.toLocaleString()}
+                      ₹{totalSpent.toLocaleString()}
                     </div>
                     <p className="text-muted-foreground">Total Spent</p>
                   </CardContent>
@@ -194,7 +215,9 @@ const Account = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Full Name</label>
-                    <p className="text-lg font-medium">{user.name}</p>
+                    <p className="text-lg font-medium">
+                      {user.user_metadata?.full_name || user.email?.split('@')[0] || 'Not provided'}
+                    </p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Email Address</label>
@@ -202,11 +225,19 @@ const Account = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Phone Number</label>
-                    <p className="text-lg font-medium">{user.phone}</p>
+                    <p className="text-lg font-medium">
+                      {user.user_metadata?.phone || 'Not provided'}
+                    </p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Date of Birth</label>
-                    <p className="text-lg font-medium">March 15, 1990</p>
+                    <label className="text-sm font-medium text-muted-foreground">Member Since</label>
+                    <p className="text-lg font-medium">
+                      {new Date(user.created_at).toLocaleDateString('en-IN', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -224,30 +255,38 @@ const Account = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {recentOrders.map((order) => (
-                    <div key={order.id} className="flex items-center space-x-4 p-4 border rounded-lg">
-                      <img
-                        src={order.image}
-                        alt="Order item"
-                        className="w-16 h-16 object-cover rounded-lg"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="font-medium">Order {order.id}</p>
-                          <Badge className={getStatusColor(order.status)}>
-                            {order.status}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground mb-1">
-                          {order.items} item{order.items !== 1 ? 's' : ''} • Placed on {new Date(order.date).toLocaleDateString()}
-                        </p>
-                        <p className="font-semibold">₹{order.total.toLocaleString()}</p>
-                      </div>
-                      <Button variant="outline" size="sm" asChild>
-                        <Link to={`/order/${order.id}`}>View Details</Link>
+                  {recentOrders.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground">No orders yet</p>
+                      <Button asChild className="mt-4">
+                        <Link to="/products">Start Shopping</Link>
                       </Button>
                     </div>
-                  ))}
+                  ) : (
+                    recentOrders.map((order) => (
+                      <div key={order.id} className="flex items-center space-x-4 p-4 border rounded-lg">
+                        <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
+                          <Package className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="font-medium">Order {order.order_number}</p>
+                            <Badge className={getStatusColor(order.status)}>
+                              {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-1">
+                            {order.order_items?.length || 0} item{(order.order_items?.length || 0) !== 1 ? 's' : ''} • Placed on {new Date(order.created_at).toLocaleDateString('en-IN')}
+                          </p>
+                          <p className="font-semibold">₹{order.total_amount.toLocaleString()}</p>
+                        </div>
+                        <Button variant="outline" size="sm" asChild>
+                          <Link to={`/order/${order.id}`}>View Details</Link>
+                        </Button>
+                      </div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>

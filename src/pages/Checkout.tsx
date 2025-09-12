@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/hooks/useAuth";
+import { useOrders } from "@/hooks/useOrders";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ const Checkout = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { cartItems, cartTotal, clearCart } = useCart();
+  const { createOrder } = useOrders();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -42,16 +44,63 @@ const Checkout = () => {
     e.preventDefault();
     setIsProcessing(true);
 
-    // Simulate payment processing
-    setTimeout(() => {
+    try {
+      // Calculate amounts
+      const subtotal = cartTotal;
+      const shippingAmount = cartTotal > 499 ? 0 : 99; // Free shipping over ₹499
+      const taxAmount = subtotal * 0.18; // 18% GST
+      const totalAmount = subtotal + shippingAmount + taxAmount;
+
+      // Create order data
+      const orderData = {
+        subtotal,
+        tax_amount: taxAmount,
+        shipping_amount: shippingAmount,
+        discount_amount: 0,
+        total_amount: totalAmount,
+        currency: 'INR',
+        shipping_first_name: paymentForm.firstName,
+        shipping_last_name: paymentForm.lastName,
+        shipping_address_line_1: paymentForm.address,
+        shipping_city: paymentForm.city,
+        shipping_state: 'India', // Default state
+        shipping_postal_code: paymentForm.zipCode,
+        shipping_country: 'India',
+        payment_method: 'Credit Card',
+        items: cartItems.map(item => ({
+          product_id: item.product_id,
+          quantity: item.quantity,
+          unit_price: item.price,
+          product_title: item.product?.title || 'Product',
+          product_image_url: item.product?.images?.[0],
+          selected_variant: item.selected_variant,
+          selected_color: item.selected_color,
+          selected_size: item.selected_size,
+        })),
+      };
+
+      // Create the order
+      await createOrder(orderData);
+      
+      // Clear the cart
       clearCart();
+      
       toast({
-        title: "Payment Successful!",
-        description: "Your order has been placed successfully.",
+        title: "Order Placed Successfully!",
+        description: "Your order has been placed and will be processed soon.",
       });
+      
       navigate("/account/orders");
+    } catch (error) {
+      console.error("Checkout error:", error);
+      toast({
+        title: "Order Failed",
+        description: "There was an error processing your order. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setIsProcessing(false);
-    }, 2000);
+    }
   };
 
   if (cartItems.length === 0) {
